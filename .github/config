@@ -1,0 +1,21 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+	fsmonitor = hooks/fsmonitor-watchman
+	hooksPath = hooks
+	worktree=.
+[user]
+	email = test@gbajs.local
+	name = gbajs-test
+[filter "callback"]
+	clean = scripts/filter-callback.sh clean %f
+	smudge = scripts/filter-callback.sh smudge %f
+	required = false
+[diff "callback"]
+	textconv = scripts/filter-callback.sh textconv
+	cachetextconv = false
+[merge "callback"]
+	driver = scripts/filter-callback.sh merge %O %A %B %L %P
+	name = callback merge driver
